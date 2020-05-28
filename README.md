@@ -15,7 +15,7 @@ In *Proceedings of the 2020 Annual Conference of the Association for Computation
 
 ## To use a pre-trained model
 * Pre-trained models can be download from [this link](https://www.dropbox.com/s/vx30kijnvio1f4k/acl2020%20best%20models.zip?dl=0). We provide all nine pre-trained models reported in our paper.
-* Choose the model you want to use and copy the folders under the `logs/` folder.
+* Choose the model you want to use and copy them to the `logs/` folder.
 * Modifiy the *test_path* accordingly in the `experiments.conf`:
    * the *test_path* is the path to *.jsonlines* file, each line of the *.jsonlines* file is a batch of sentences and must in the following format:
    
