@@ -10,6 +10,7 @@ In *Proceedings of the 2020 Annual Conference of the Association for Computation
 ## Setup Environments
 * The code is written in Python 2, the compatibility to Python 3 is not guaranteed.  
 * Before starting, you need to install all the required packages listed in the requirment.txt using `pip install -r requirements.txt`.
+* Then download the BERT models, for English we used the [original cased BERT-Large model](https://storage.googleapis.com/bert_models/2018_10_18/cased_L-24_H-1024_A-16.zip) and for other languages we used the [cased BERT-Base multilingual model]( https://storage.googleapis.com/bert_models/2018_11_23/multi_cased_L-12_H-768_A-12.zip).
 * After that modify and run `extract_bert_features/extract_bert_features.sh` to compute the BERT embeddings for your training or testing.
 * You also need to download context-independent word embeddings such as fasttext or GloVe embeddings that required by the system.
 
