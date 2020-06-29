@@ -3,9 +3,13 @@ from __future__ import division
 from __future__ import print_function
 
 import os,time,json,threading
-import random
+import random, io
 import numpy as np
-import tensorflow as tf
+from collections import defaultdict
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+
+tf.compat.v1.disable_v2_behavior()
 import h5py
 
 import util
@@ -20,7 +24,10 @@ class BiaffineNERModel():
     self.char_embedding_size = config["char_embedding_size"]
     self.char_dict = util.load_char_dict(config["char_vocab_path"])
 
-    self.lm_file = h5py.File(self.config["lm_path"], "r")
+    if self.config["lm_path"].lower() == "none":
+      self.lm_file = None
+    else:
+      self.lm_file = h5py.File(self.config["lm_path"], "r")
     self.lm_layers = self.config["lm_layers"]
     self.lm_size = self.config["lm_size"]
 
@@ -130,8 +137,8 @@ class BiaffineNERModel():
     if is_training:
       for sid, sent in enumerate(sentences):
         ner = {(s,e):self.ner_maps[t] for s,e,t in ners[sid]}
-        for s in xrange(len(sent)):
-          for e in xrange(s,len(sent)):
+        for s in range(len(sent)):
+          for e in range(s,len(sent)):
             gold_labels.append(ner.get((s,e),0))
     gold_labels = np.array(gold_labels)
 
@@ -153,10 +160,14 @@ class BiaffineNERModel():
           cell_fw = util.CustomLSTMCell(self.config["contextualization_size"], num_sentences, lstm_dropout)
         with tf.variable_scope("bw_cell"):
           cell_bw = util.CustomLSTMCell(self.config["contextualization_size"], num_sentences, lstm_dropout)
-        state_fw = tf.contrib.rnn.LSTMStateTuple(tf.tile(cell_fw.initial_state.c, [num_sentences, 1]),
-                                                 tf.tile(cell_fw.initial_state.h, [num_sentences, 1]))
-        state_bw = tf.contrib.rnn.LSTMStateTuple(tf.tile(cell_bw.initial_state.c, [num_sentences, 1]),
-                                                 tf.tile(cell_bw.initial_state.h, [num_sentences, 1]))
+        state_fw = tf.compat.v1.nn.rnn_cell.LSTMStateTuple(
+          tf.tile(cell_fw.initial_state.c, [num_sentences, 1]),
+          tf.tile(cell_fw.initial_state.h, [num_sentences, 1]),
+        )
+        state_bw = tf.compat.v1.nn.rnn_cell.LSTMStateTuple(
+          tf.tile(cell_bw.initial_state.c, [num_sentences, 1]),
+          tf.tile(cell_bw.initial_state.h, [num_sentences, 1]),
+        )
 
         (fw_outputs, bw_outputs), ((_, fw_final_state), (_, bw_final_state)) = tf.nn.bidirectional_dynamic_rnn(
           cell_fw=cell_fw,
@@ -194,17 +205,18 @@ class BiaffineNERModel():
     context_emb_list.append(aggregated_char_emb)
 
 
-    lm_emb_size = util.shape(lm_emb, 2)
-    lm_num_layers = util.shape(lm_emb, 3)
-    with tf.variable_scope("lm_aggregation"):
-      self.lm_weights = tf.nn.softmax(tf.get_variable("lm_scores", [lm_num_layers], initializer=tf.constant_initializer(0.0)))
-      self.lm_scaling = tf.get_variable("lm_scaling", [], initializer=tf.constant_initializer(1.0))
+    if self.lm_file is not None:  # Only add these layers if we're using contextualized embeddings
+      lm_emb_size = util.shape(lm_emb, 2)
+      lm_num_layers = util.shape(lm_emb, 3)
+      with tf.variable_scope("lm_aggregation"):
+        self.lm_weights = tf.nn.softmax(tf.get_variable("lm_scores", [lm_num_layers], initializer=tf.constant_initializer(0.0)))
+        self.lm_scaling = tf.get_variable("lm_scaling", [], initializer=tf.constant_initializer(1.0))
 
-    flattened_lm_emb = tf.reshape(lm_emb, [num_sentences * max_sentence_length * lm_emb_size, lm_num_layers])
-    flattened_aggregated_lm_emb = tf.matmul(flattened_lm_emb, tf.expand_dims(self.lm_weights, 1)) # [num_sentences * max_sentence_length * emb, 1]
-    aggregated_lm_emb = tf.reshape(flattened_aggregated_lm_emb, [num_sentences, max_sentence_length, lm_emb_size])
-    aggregated_lm_emb *= self.lm_scaling
-    context_emb_list.append(aggregated_lm_emb)
+      flattened_lm_emb = tf.reshape(lm_emb, [num_sentences * max_sentence_length * lm_emb_size, lm_num_layers])
+      flattened_aggregated_lm_emb = tf.matmul(flattened_lm_emb, tf.expand_dims(self.lm_weights, 1)) # [num_sentences * max_sentence_length * emb, 1]
+      aggregated_lm_emb = tf.reshape(flattened_aggregated_lm_emb, [num_sentences, max_sentence_length, lm_emb_size])
+      aggregated_lm_emb *= self.lm_scaling
+      context_emb_list.append(aggregated_lm_emb)
 
     context_emb = tf.concat(context_emb_list, 2) # [num_sentences, max_sentence_length, emb]
     context_emb = tf.nn.dropout(context_emb, self.lexical_dropout) # [num_sentences, max_sentence_length, emb]
@@ -242,11 +254,11 @@ class BiaffineNERModel():
   def get_pred_ner(self, sentences, span_scores, is_flat_ner):
     candidates = []
     for sid,sent in enumerate(sentences):
-      for s in xrange(len(sent)):
-        for e in xrange(s,len(sent)):
+      for s in range(len(sent)):
+        for e in range(s,len(sent)):
           candidates.append((sid,s,e))
 
-    top_spans = [[] for _ in xrange(len(sentences))]
+    top_spans = [[] for _ in range(len(sentences))]
     for i, type in enumerate(np.argmax(span_scores,axis=1)):
       if type > 0:
         sid, s,e = candidates[i]
@@ -254,7 +266,7 @@ class BiaffineNERModel():
 
 
     top_spans = [sorted(top_span,reverse=True,key=lambda x:x[3]) for top_span in top_spans]
-    sent_pred_mentions = [[] for _ in xrange(len(sentences))]
+    sent_pred_mentions = [[] for _ in range(len(sentences))]
     for sid, top_span in enumerate(top_spans):
       for ns,ne,t,_ in top_span:
         for ts,te,_ in sent_pred_mentions[sid]:
@@ -307,7 +319,7 @@ class BiaffineNERModel():
       fp += len(pred_ners - gold_ners)
 
       if is_final_test:
-        for i in xrange(self.num_types):
+        for i in range(self.num_types):
           sub_gm = set((sid,s,e) for sid,s,e,t in gold_ners if t ==i+1)
           sub_pm = set((sid,s,e) for sid,s,e,t in pred_ners if t == i+1)
           sub_tp[i] += len(sub_gm & sub_pm)
@@ -331,9 +343,9 @@ class BiaffineNERModel():
 
     if is_final_test:
       print("****************SUB NER TYPES********************")
-      for i in xrange(self.num_types):
-        sub_r = 0 if sub_tp == 0 else float(sub_tp[i]) / (sub_tp[i] + sub_fn[i])
-        sub_p = 0 if sub_tp == 0 else float(sub_tp[i]) / (sub_tp[i] + sub_fp[i])
+      for i in range(self.num_types):
+        sub_r = 0 if sub_tp[i] == 0 else float(sub_tp[i]) / (sub_tp[i] + sub_fn[i])
+        sub_p = 0 if sub_tp[i] == 0 else float(sub_tp[i]) / (sub_tp[i] + sub_fp[i])
         sub_f1 = 0 if sub_p == 0 else 2.0 * sub_r * sub_p / (sub_r + sub_p)
 
         print("{} F1: {:.2f}%".format(self.ner_types[i],sub_f1 * 100))
