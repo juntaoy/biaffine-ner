@@ -36,3 +36,6 @@ In *Proceedings of the 58th Annual Conference of the Association for Computation
 ## To train your own model
 * You will need additionally to create the character vocabulary by using `python get_char_vocab.py train.jsonlines dev.jsonlines`
 * Then you can start training by using `python train.py config_name`
+
+## More Versions
+* [Amir Zeldes](https://github.com/amir-zeldes) kindly created a tensorflow 2.0 and python 3 ready version and can be find [here](https://github.com/amir-zeldes/biaffine-ner)
