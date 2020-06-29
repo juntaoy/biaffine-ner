@@ -3,12 +3,12 @@
 ## Introduction
 This repository contains code introduced in the following paper:
  
-**[Named Entity Recognition as Dependency Parsing](https://arxiv.org/abs/2005.07150)**  
+**[Named Entity Recognition as Dependency Parsing](https://www.aclweb.org/anthology/2020.acl-main.577/)**  
 Juntao Yu, Bernd Bohnet and Massimo Poesio  
 In *Proceedings of the 58th Annual Conference of the Association for Computational Linguistics (ACL)*, 2020
 
 ## Setup Environments
-* The code is written in Python 2, the compatibility to Python 3 is not guaranteed.  
+* The code is written in Python 2 and Tensorflow 1.0, A Python3 and Tensorflow 2.0 ready version is provided by Amir (see **More Versions**).  
 * Before starting, you need to install all the required packages listed in the requirment.txt using `pip install -r requirements.txt`.
 * Then download the BERT models, for English we used the [original cased BERT-Large model](https://storage.googleapis.com/bert_models/2018_10_18/cased_L-24_H-1024_A-16.zip) and for other languages we used the [cased BERT-Base multilingual model]( https://storage.googleapis.com/bert_models/2018_11_23/multi_cased_L-12_H-768_A-12.zip).
 * After that modify and run `extract_bert_features/extract_bert_features.sh` to compute the BERT embeddings for your training or testing.
