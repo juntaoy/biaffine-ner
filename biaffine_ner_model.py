@@ -331,9 +331,9 @@ class BiaffineNERModel():
 
     if is_final_test:
       print("****************SUB NER TYPES********************")
-      for i in xrange(self.num_types):
-        sub_r = 0 if sub_tp == 0 else float(sub_tp[i]) / (sub_tp[i] + sub_fn[i])
-        sub_p = 0 if sub_tp == 0 else float(sub_tp[i]) / (sub_tp[i] + sub_fp[i])
+      for i in range(self.num_types):
+        sub_r = 0 if sub_tp[i] == 0 else float(sub_tp[i]) / (sub_tp[i] + sub_fn[i])
+        sub_p = 0 if sub_tp[i] == 0 else float(sub_tp[i]) / (sub_tp[i] + sub_fp[i])
         sub_f1 = 0 if sub_p == 0 else 2.0 * sub_r * sub_p / (sub_r + sub_p)
 
         print("{} F1: {:.2f}%".format(self.ner_types[i],sub_f1 * 100))
