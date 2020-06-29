@@ -24,7 +24,10 @@ class BiaffineNERModel():
     self.char_embedding_size = config["char_embedding_size"]
     self.char_dict = util.load_char_dict(config["char_vocab_path"])
 
-    self.lm_file = h5py.File(self.config["lm_path"], "r")
+    if self.config["lm_path"].lower() == "none":
+      self.lm_file = None
+    else:
+      self.lm_file = h5py.File(self.config["lm_path"], "r")
     self.lm_layers = self.config["lm_layers"]
     self.lm_size = self.config["lm_size"]
 
@@ -202,17 +205,18 @@ class BiaffineNERModel():
     context_emb_list.append(aggregated_char_emb)
 
 
-    lm_emb_size = util.shape(lm_emb, 2)
-    lm_num_layers = util.shape(lm_emb, 3)
-    with tf.variable_scope("lm_aggregation"):
-      self.lm_weights = tf.nn.softmax(tf.get_variable("lm_scores", [lm_num_layers], initializer=tf.constant_initializer(0.0)))
-      self.lm_scaling = tf.get_variable("lm_scaling", [], initializer=tf.constant_initializer(1.0))
+    if self.lm_file is not None:  # Only add these layers if we're using contextualized embeddings
+      lm_emb_size = util.shape(lm_emb, 2)
+      lm_num_layers = util.shape(lm_emb, 3)
+      with tf.variable_scope("lm_aggregation"):
+        self.lm_weights = tf.nn.softmax(tf.get_variable("lm_scores", [lm_num_layers], initializer=tf.constant_initializer(0.0)))
+        self.lm_scaling = tf.get_variable("lm_scaling", [], initializer=tf.constant_initializer(1.0))
 
-    flattened_lm_emb = tf.reshape(lm_emb, [num_sentences * max_sentence_length * lm_emb_size, lm_num_layers])
-    flattened_aggregated_lm_emb = tf.matmul(flattened_lm_emb, tf.expand_dims(self.lm_weights, 1)) # [num_sentences * max_sentence_length * emb, 1]
-    aggregated_lm_emb = tf.reshape(flattened_aggregated_lm_emb, [num_sentences, max_sentence_length, lm_emb_size])
-    aggregated_lm_emb *= self.lm_scaling
-    context_emb_list.append(aggregated_lm_emb)
+      flattened_lm_emb = tf.reshape(lm_emb, [num_sentences * max_sentence_length * lm_emb_size, lm_num_layers])
+      flattened_aggregated_lm_emb = tf.matmul(flattened_lm_emb, tf.expand_dims(self.lm_weights, 1)) # [num_sentences * max_sentence_length * emb, 1]
+      aggregated_lm_emb = tf.reshape(flattened_aggregated_lm_emb, [num_sentences, max_sentence_length, lm_emb_size])
+      aggregated_lm_emb *= self.lm_scaling
+      context_emb_list.append(aggregated_lm_emb)
 
     context_emb = tf.concat(context_emb_list, 2) # [num_sentences, max_sentence_length, emb]
     context_emb = tf.nn.dropout(context_emb, self.lexical_dropout) # [num_sentences, max_sentence_length, emb]
