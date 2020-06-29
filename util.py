@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, io
 import errno
 import codecs
 import collections
@@ -246,7 +246,7 @@ class EmbeddingDictionary(object):
     embedding_dict = collections.defaultdict(lambda:default_embedding)
     if len(path) > 0:
       vocab_size = None
-      with open(path) as f:
+      with io.open(path,encoding="utf8") as f:
         for i, line in enumerate(f.readlines()):
           if i == 0 and line.count(" ") == 1:  # header row
             continue
@@ -261,7 +261,8 @@ class EmbeddingDictionary(object):
     return embedding_dict
 
   def is_in_embeddings(self, key):
-    return self._embeddings.has_key(key)
+    return key in self._embeddings
+    #return self._embeddings.has_key(key)
 
   def __getitem__(self, key):
     embedding = self._embeddings[key]

@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os,time,json,threading
-import random
+import random, io
 import numpy as np
 from collections import defaultdict
 #import tensorflow as tf
@@ -134,8 +134,8 @@ class BiaffineNERModel():
     if is_training:
       for sid, sent in enumerate(sentences):
         ner = {(s,e):self.ner_maps[t] for s,e,t in ners[sid]}
-        for s in xrange(len(sent)):
-          for e in xrange(s,len(sent)):
+        for s in range(len(sent)):
+          for e in range(s,len(sent)):
             gold_labels.append(ner.get((s,e),0))
     gold_labels = np.array(gold_labels)
 
@@ -250,11 +250,11 @@ class BiaffineNERModel():
   def get_pred_ner(self, sentences, span_scores, is_flat_ner):
     candidates = []
     for sid,sent in enumerate(sentences):
-      for s in xrange(len(sent)):
-        for e in xrange(s,len(sent)):
+      for s in range(len(sent)):
+        for e in range(s,len(sent)):
           candidates.append((sid,s,e))
 
-    top_spans = [[] for _ in xrange(len(sentences))]
+    top_spans = [[] for _ in range(len(sentences))]
     for i, type in enumerate(np.argmax(span_scores,axis=1)):
       if type > 0:
         sid, s,e = candidates[i]
@@ -262,7 +262,7 @@ class BiaffineNERModel():
 
 
     top_spans = [sorted(top_span,reverse=True,key=lambda x:x[3]) for top_span in top_spans]
-    sent_pred_mentions = [[] for _ in xrange(len(sentences))]
+    sent_pred_mentions = [[] for _ in range(len(sentences))]
     for sid, top_span in enumerate(top_spans):
       for ns,ne,t,_ in top_span:
         for ts,te,_ in sent_pred_mentions[sid]:
@@ -315,7 +315,7 @@ class BiaffineNERModel():
       fp += len(pred_ners - gold_ners)
 
       if is_final_test:
-        for i in xrange(self.num_types):
+        for i in range(self.num_types):
           sub_gm = set((sid,s,e) for sid,s,e,t in gold_ners if t ==i+1)
           sub_pm = set((sid,s,e) for sid,s,e,t in pred_ners if t == i+1)
           sub_tp[i] += len(sub_gm & sub_pm)
