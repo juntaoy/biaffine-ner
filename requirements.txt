@@ -1,4 +1,4 @@
-tensorflow-gpu==1.12
+tensorflow>=2.2
 scikit-learn
 pyhocon
 numpy

@@ -5,7 +5,11 @@ from __future__ import print_function
 import os,time,json,threading
 import random
 import numpy as np
-import tensorflow as tf
+from collections import defaultdict
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+
+tf.compat.v1.disable_v2_behavior()
 import h5py
 
 import util
@@ -153,10 +157,14 @@ class BiaffineNERModel():
           cell_fw = util.CustomLSTMCell(self.config["contextualization_size"], num_sentences, lstm_dropout)
         with tf.variable_scope("bw_cell"):
           cell_bw = util.CustomLSTMCell(self.config["contextualization_size"], num_sentences, lstm_dropout)
-        state_fw = tf.contrib.rnn.LSTMStateTuple(tf.tile(cell_fw.initial_state.c, [num_sentences, 1]),
-                                                 tf.tile(cell_fw.initial_state.h, [num_sentences, 1]))
-        state_bw = tf.contrib.rnn.LSTMStateTuple(tf.tile(cell_bw.initial_state.c, [num_sentences, 1]),
-                                                 tf.tile(cell_bw.initial_state.h, [num_sentences, 1]))
+        state_fw = tf.compat.v1.nn.rnn_cell.LSTMStateTuple(
+          tf.tile(cell_fw.initial_state.c, [num_sentences, 1]),
+          tf.tile(cell_fw.initial_state.h, [num_sentences, 1]),
+        )
+        state_bw = tf.compat.v1.nn.rnn_cell.LSTMStateTuple(
+          tf.tile(cell_bw.initial_state.c, [num_sentences, 1]),
+          tf.tile(cell_bw.initial_state.h, [num_sentences, 1]),
+        )
 
         (fw_outputs, bw_outputs), ((_, fw_final_state), (_, bw_final_state)) = tf.nn.bidirectional_dynamic_rnn(
           cell_fw=cell_fw,

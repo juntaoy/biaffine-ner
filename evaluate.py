@@ -4,7 +4,11 @@ from __future__ import division
 from __future__ import print_function
 
 
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+
+tf.compat.v1.disable_v2_behavior()
+
 import util,biaffine_ner_model
 
 if __name__ == "__main__":
