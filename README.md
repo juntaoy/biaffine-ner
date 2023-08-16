@@ -15,7 +15,7 @@ In *Proceedings of the 58th Annual Conference of the Association for Computation
 * You also need to download context-independent word embeddings such as fasttext or GloVe embeddings that required by the system.
 
 ## To use a pre-trained model
-* Pre-trained models can be download from [this link](https://essexuniversity.box.com/s/etbae3f57hts3hr79e5ck5z0tppkoasu). We provide all nine pre-trained models reported in our paper.
+* Pre-trained models can be download from [this link](https://drive.google.com/file/d/1n_-I1kmZHwr0eMZ89xhnaEqxubJ1tvsM/view?usp=sharing). We provide all nine pre-trained models reported in our paper.
 * Choose the model you want to use and copy them to the `logs/` folder.
 * Modifiy the *test_path* accordingly in the `experiments.conf`:
    * the *test_path* is the path to *.jsonlines* file, each line of the *.jsonlines* file is a batch of sentences and must in the following format:
